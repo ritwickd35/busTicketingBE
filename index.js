@@ -1,5 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const routes = require('./routes/index');
+const bodyParser = require('body-parser')
+
+// create application/json parser
+const jsonParser = bodyParser.json()
 
 const mongo_URL = 'mongodb://127.0.0.1:27017/busTicketing'
 
@@ -17,11 +22,12 @@ app.listen(port, () => {
 })
 
 main().then(() => {
-    console.log('here')
-    app.get('/', (req, res) => {
+    app.use(jsonParser)
+    app.get('/test', (req, res) => {
         console.log("hello world")
         res.send("hello world")
     })
+    app.use('/', routes)
 })
 
 module.exports = app
