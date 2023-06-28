@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const ticket_schema = mongoose.Schema(
     {
@@ -17,7 +17,7 @@ const ticket_schema = mongoose.Schema(
         booking_date: {
             type: Date,
         },
-        user: {
+        booked_by: {
             type: mongoose.SchemaTypes.ObjectId,
             ref: 'user'
         }

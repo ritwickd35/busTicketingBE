@@ -12,14 +12,17 @@ const app = express()
 
 const port = 3000;
 
+app.listen(port, () => {
+    console.log("listening on port", port)
+})
+
 main().then(() => {
     console.log('here')
     app.get('/', (req, res) => {
-        res.send("hello")
-    })
-
-    app.listen(port, () => {
-        console.log(`app listening on port ${port}`)
+        console.log("hello world")
+        res.send("hello world")
     })
 })
+
+module.exports = app
 
