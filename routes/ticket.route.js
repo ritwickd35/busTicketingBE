@@ -1,6 +1,7 @@
 const express = require("express");
 const { getSeatDetails, bookSeat, getAllBookedSeats, getAllUnbookedSeats, getAllSeats, deleteSeats } = require("../controllers/ticket.controller");
 const router = express.Router();
+const verifyToken = require('../services/verifyToken.service')
 
 
 // route to view the status of any particular seat
@@ -19,6 +20,6 @@ router.get('/all-unbooked-seats', getAllUnbookedSeats)
 router.get('/all-seats', getAllSeats)
 
 // route to reset all seats
-router.delete('/reset-seats', deleteSeats)
+router.delete('/reset-seats', verifyToken, deleteSeats)
 
 module.exports = router;
