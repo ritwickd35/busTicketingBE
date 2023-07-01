@@ -10,7 +10,7 @@ const router = express.Router();
 router.post('/register', async (req, res) => {
     const { name, email, password } = req.body; // getting name, email, password
 
-    if (!name || !email || !password) return void res.status(500).send("required fields missing to create an user") //name, email or password missing
+    if (!name || !email || !password) return void res.status(500).send({ status: 'failure', message: "required fields missing to create an user" }) //name, email or password missing
 
     try {
         const user = await User.create({
@@ -21,20 +21,20 @@ router.post('/register', async (req, res) => {
 
         res.status(200).send({ status: 'success', message: 'user created', token })
     } catch (e) {
-        return void res.status(500).send("There was a problem in registering the user", e)
+        return void res.status(500).send({ status: 'failure', message: "There was a problem in registering the user" })
     }
 })
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) return void res.status(500).send("required fields missing to create an user")
+    if (!email || !password) return void res.status(500).send({ status: 'failure', message: "required fields missing to log in an user" })
 
     const user = await User.findOne({ "email": email })
     if (user) // if user found, compare 
     {
         bcrypt.compare(password, user.password, function (err, isMatch) {
-            if (err) return void res.status(500).send("There was a problem in registering the user");
+            if (err) return void res.status(500).send({ status: 'failure', message: "there was a problem in logging in the user" });
 
             if (isMatch) {
                 const token = jwt.sign({ id: user._id }, secret, {
@@ -42,11 +42,11 @@ router.post('/login', async (req, res) => {
                 });
                 return void res.status(200).send({ status: 'success', message: 'logged in', token, user })
             }
-            else return void res.status(401).send("Wrong password")
+            else return void res.status(401).send({ status: 'failure', message: "wrong password" })
         });
     }
 
-    else return void res.status(404).send('No user found.');
+    else return void res.status(404).send({ status: 'failure', message: 'No user found.' });
 })
 
 module.exports = router;
