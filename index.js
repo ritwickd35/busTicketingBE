@@ -7,10 +7,13 @@ const bodyParser = require('body-parser')
 // create application/json parser
 const jsonParser = bodyParser.json()
 
-const mongo_URL = `mongodb://${process.env.MONGO_URL}/${process.env.MONGO_DATABASE_NAME}?directConnection=true`
+// const mongo_URL = `mongodb://${process.env.MONGO_URL}/${process.env.MONGO_DATABASE_NAME}?directConnection=true`
+const mongo_URL = `mongodb://${process.env.MONGO_URL}/${process.env.MONGO_DATABASE_NAME}`
 
 async function main() {
+    console.log('<-- connecting to mongodb -->', mongo_URL)
     await mongoose.connect(mongo_URL);
+    console.log('<--connected to mongo-->')
 }
 
 const app = express()
