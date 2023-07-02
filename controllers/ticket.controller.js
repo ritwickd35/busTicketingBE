@@ -1,4 +1,5 @@
 const Ticket = require("../models/Ticket.model");
+const User = require("../models/User.model");
 
 
 const getSeatDetails = async (req, res) => {
@@ -59,24 +60,32 @@ const getAllSeats = async (req, res) => {
 }
 
 const deleteSeats = async (req, res) => {
-    // show all booked seats
-    const allSeats = await Ticket.find({});
-    if (allSeats.length > 0) {
-        const promisesArray = []
-        allSeats.forEach(seat => {
-            seat['seat_status'] = "unbooked";
-            delete seat.booked_by;
-            delete seat.booking_date;
-            promisesArray.push(
-                Ticket.findOneAndUpdate({ "_id": seat._id }, seat, { upsert: false })
-            )
-        })
-        Promise.allSettled(promisesArray).then(() => {
-            return void res.status(200).send({ status: 'success', message: 'all seats released' })
-        })
+    // fetch user details to check whether user type is admin or not
+    const user = await User.findOne({ "_id": req.userId })
+    console.log(user)
+    if (user.user_type === 'admin') {
+        const allSeats = await Ticket.find({});
+        if (allSeats.length > 0) {
+            const promisesArray = []
+            allSeats.forEach(seat => {
+                seat['seat_status'] = "unbooked";
+                delete seat.booked_by;
+                delete seat.booking_date;
+                promisesArray.push(
+                    Ticket.findOneAndUpdate({ "_id": seat._id }, seat, { upsert: false })
+                )
+            })
+            Promise.allSettled(promisesArray).then(() => {
+                return void res.status(200).send({ status: 'success', message: 'all seats released' })
+            })
+        }
+
+        else return res.status(200).send({ seats: allSeats, status: 'success', message: 'no seats' })
+    }
+    else {
+        res.status(401).send({ auth: false, message: 'user is not authorized for this task' })
     }
 
-    else return res.status(200).send({ seats: allSeats, status: 'success', message: 'no seats' })
 }
 
 module.exports = { getSeatDetails, bookSeat, getAllBookedSeats, getAllSeats, getAllUnbookedSeats, deleteSeats }

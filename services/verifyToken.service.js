@@ -9,7 +9,7 @@ const verifyToken = (req, res, next) => {
     jwt.verify(token, secret, function (err, decoded) {
         if (err) return void res.status(500).send({ auth: false, message: 'Failed to validate token' })
 
-        req.userId = decoded.id;
+        req.userId = decoded.id; //APPENDING DECODED USER ID FOR USE IN CONTROLLERS
         next();
     })
 }

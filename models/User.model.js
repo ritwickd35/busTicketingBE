@@ -18,8 +18,12 @@ const user_schema = mongoose.Schema({
     password: {
         type: String,
         required: true,
+    },
+    user_type: {
+        type: String,
+        required: true,
+        enum: ['admin', 'normal']
     }
-
 })
 
 user_schema.pre('save', function (next) {
@@ -33,7 +37,6 @@ user_schema.pre('save', function (next) {
 
         // hash the password using our new salt
         bcrypt.hash(user.password, salt, function (err, hash) {
-            console.log("salt is", salt)
             if (err) return next(err);
             // override the cleartext password with the hashed one
             user.password = hash;
