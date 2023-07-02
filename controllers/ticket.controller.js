@@ -3,6 +3,7 @@ const User = require("../models/User.model");
 
 
 const getSeatDetails = async (req, res) => {
+    console.log("in get seat details")
     let seatNum = req.params.seatNum;
     seatNum = +seatNum; // converting to number
     if (isNaN(seatNum)) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })

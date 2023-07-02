@@ -3,19 +3,21 @@ const mongoose = require('mongoose');
 const routes = require('./routes/index');
 const bodyParser = require('body-parser')
 
+
 // create application/json parser
 const jsonParser = bodyParser.json()
 
-const mongo_URL = 'mongodb://127.0.0.1:27017/busTicketing'
+const mongo_URL = `mongodb://${process.env.MONGO_URL}/${process.env.MONGO_DATABASE_NAME}?directConnection=true`
 
 async function main() {
     await mongoose.connect(mongo_URL);
-    // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 }
 
 const app = express()
 
-const port = 3000;
+const port = process.env.SERVER_PORT;
+
+console.log('mongo url', port, mongo_URL)
 
 app.listen(port, () => {
     console.log("listening on port", port)
