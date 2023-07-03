@@ -38,7 +38,7 @@ const registerController = async (req, res) => {
         }).catch(err => next(err)); // passing errors to express handler
 
         const token = jwt.sign({ id: user._id }, secret, {
-            expiresIn: process.env.JWT_EXPIRY_MINUTES
+            expiresIn: +process.env.JWT_EXPIRY_MINUTES
         }) // creating a new token
 
         res.status(200).send({ status: 'success', message: 'user created', token })
@@ -60,7 +60,7 @@ const loginController = async (req, res) => {
 
             if (isMatch) {
                 const token = jwt.sign({ id: user._id }, secret, {
-                    expiresIn: process.env.JWT_EXPIRY_MINUTES // expires in 24 hours
+                    expiresIn: +process.env.JWT_EXPIRY_MINUTES // expires in 24 hours
                 });
                 return void res.status(200).send({ status: 'success', message: 'logged in', token, user })
             }

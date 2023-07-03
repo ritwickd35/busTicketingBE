@@ -1,5 +1,5 @@
 const express = require("express");
-const { getSeatDetails, bookSeat, getAllBookedSeats, getAllUnbookedSeats, getAllSeats, deleteSeats, cancelSeat } = require("../controllers/ticket.controller");
+const { getSeatDetails, bookSeat, getAllBookedSeats, getAllUnbookedSeats, getAllSeats, deleteSeats, cancelSeat, getPersonDetails } = require("../controllers/ticket.controller");
 const router = express.Router();
 const verifyToken = require('../services/verifyToken.service')
 
@@ -26,6 +26,6 @@ router.patch('/cancel-booking', verifyToken, cancelSeat)
 router.delete('/reset-seats', verifyToken, deleteSeats)
 
 //router to get person details
-router.get('/person-details/:seatNum')
+router.get('/person-details/:seatNum', getPersonDetails)
 
 module.exports = router;

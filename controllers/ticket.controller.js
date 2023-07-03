@@ -31,9 +31,8 @@ const getPersonDetails = async (req, res) => {
 
     if (seatDetails)
         if (seatDetails.seat_status === 'booked') {
-            const user = await User.findOne({ "_id": seatDetails.booked_by }).catch(err => next(err))
-            delete user.password;
-            delete user.user_type;
+            const user = await User.findOne({ "_id": seatDetails.booked_by }, { "password": -1, "user_type": -1 }).catch(err => next(err))
+            console.log(user)
             return void res.status(HttpStatusCode.Ok).send({ user, status: 'success', message: 'user details' })
         }
         else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not booked` })
@@ -83,7 +82,6 @@ const cancelSeat = async (req, res) => {
         let seatNum = req.body.seatNum;
         seatNum = +seatNum; // converting to number
 
-
         if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
 
         const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err)) // passing errors to express handler
@@ -93,7 +91,7 @@ const cancelSeat = async (req, res) => {
                 return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} not booked` })
 
             const seatBookedBy = seatDetails.booked_by;
-            if (seatBookedBy === userId) {
+            if (seatBookedBy.equals(userId)) { // user match, proceed to cancellation
 
                 seatDetails.seat_status = 'unbooked'
                 delete seatDetails.booked_by
@@ -135,31 +133,17 @@ const getAllSeats = async (req, res) => {
 const deleteSeats = async (req, res) => {
     // fetch user details to check whether user type is admin or not
     const user = await User.findOne({ "_id": req.userId }).catch(err => next(err)) // passing errors to express to handle
-    if (user) {
+    if (user)
         if (user.user_type === 'admin') {
-            const allSeats = await Ticket.find({}).catch(err => next(err)) // passing errors to express to handle;
+            const start = new Date().getTime();
 
-            const promisesArray = []
-            allSeats.forEach(seat => {
-                seat['seat_status'] = "unbooked";
-                delete seat.booked_by; // deleting booking details
-                delete seat.booking_date;
-                promisesArray.push(
-                    seat.save()
-                )
-            })
-
-            Promise.allSettled(promisesArray).then(() => {
-                return void res.status(200).send({ status: 'success', message: 'all seats released' })
-            })
-
+            await Ticket.updateMany({}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } });
+            const end = new Date().getTime();
+            return void res.status(HttpStatusCode.Ok).send({ status: 'success', message: `all seats released in ${end - start}ms` })
         }
-        else {
-            res.status(401).send({ auth: false, message: 'user is not authorized for this task' })
-        }
-    }
-    return void res.status(HttpStatusCode.Unauthorized).send({ seatDetails: null, status: 'failure', message: 'user not found' })
+        else return void res.status(HttpStatusCode.Unauthorized).send({ auth: false, message: 'user is not authorized for this task' })
 
+    else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: 'user not found' })
 }
 
 module.exports = { getSeatDetails, bookSeat, getAllBookedSeats, getAllSeats, getAllUnbookedSeats, deleteSeats, cancelSeat, getPersonDetails }
