@@ -93,7 +93,7 @@ const cancelSeat = async (req, res) => {
             const seatBookedBy = seatDetails.booked_by;
             
             if (seatBookedBy.equals(userId)) { // user match, proceed to cancellation
-                await Ticket.updateOne({"_id": userId}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } }).catch(err => next(err)) // passing errors to express handler
+                await Ticket.updateOne({"_id": seatDetails._id}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } }).catch(err => next(err)) // passing errors to express handler
                 return void res.status(HttpStatusCode.Created).send({ seatDetails, status: 'success', message: 'seat cancelled successfully' })
             }
             
