@@ -91,16 +91,12 @@ const cancelSeat = async (req, res) => {
                 return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} not booked` })
 
             const seatBookedBy = seatDetails.booked_by;
+            
             if (seatBookedBy.equals(userId)) { // user match, proceed to cancellation
-
-                seatDetails.seat_status = 'unbooked'
-                delete seatDetails.booked_by
-                delete seatDetails.booking_date
-
-                await seatDetails.save().catch(err => next(err)) // passing errors to express handler
-
+                await Ticket.updateOne({"_id": userId}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } }).catch(err => next(err)) // passing errors to express handler
                 return void res.status(HttpStatusCode.Created).send({ seatDetails, status: 'success', message: 'seat cancelled successfully' })
             }
+            
             return void res.status(HttpStatusCode.Unauthorized).send({ seatDetails: null, status: 'failure', message: 'this seat is not under your booking. you can only cancel a seat you have booked' })
         }
         else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not found` })
@@ -137,7 +133,7 @@ const deleteSeats = async (req, res) => {
         if (user.user_type === 'admin') {
             const start = new Date().getTime();
 
-            await Ticket.updateMany({}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } });
+            await Ticket.updateMany({}, { "seat_status": "unbooked", "$unset": { "booking_date": 1, "booked_by": 1 } }).catch(err => next(err)) // passing errors to express handler;
             const end = new Date().getTime();
             return void res.status(HttpStatusCode.Ok).send({ status: 'success', message: `all seats released in ${end - start}ms` })
         }
