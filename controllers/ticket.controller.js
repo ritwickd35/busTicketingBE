@@ -1,92 +1,165 @@
+const { HttpStatusCode } = require("axios");
 const Ticket = require("../models/Ticket.model");
 const User = require("../models/User.model");
 
+// check for valid auth message where i) user loggin in reqrd ii)Admin user type required
+// create a service for user verification(user id extracted from token exists )
+// check all api
 
 const getSeatDetails = async (req, res) => {
-    console.log("in get seat details")
     let seatNum = req.params.seatNum;
     seatNum = +seatNum; // converting to number
-    if (isNaN(seatNum)) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
-    const seatDetails = await Ticket.findOne({ "seat_number": seatNum })
+
+    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+
+    const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err))  // passing errors to express handler 
+
     if (seatDetails) {
         return void res.status(200).send({ seatDetails, status: 'success', message: 'found seat' })
     }
-    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'no seat with the given details found' })
 
-    //get a particular seat details
+    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
 }
+
+const getPersonDetails = async (req, res) => {
+    let seatNum = req.params.seatNum;
+    seatNum = +seatNum; // converting to number
+
+    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+
+    const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err))  // passing errors to express handler 
+
+    if (seatDetails)
+        if (seatDetails.seat_status === 'booked') {
+            const user = await User.findOne({ "_id": seatDetails.booked_by }).catch(err => next(err))
+            delete user.password;
+            delete user.user_type;
+            return void res.status(HttpStatusCode.Ok).send({ user, status: 'success', message: 'user details' })
+        }
+        else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not booked` })
+
+    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
+}
+
+
 
 const bookSeat = async (req, res) => {
-    //check if seat is unbooked
-    //if unbooked book seat
-    let seatNum = req.body.seatNum
-    seatNum = +seatNum; // converting to number
-    if (isNaN(seatNum)) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
-    const seatDetails = await Ticket.findOne({ "seat_number": seatNum })
-    if (seatDetails) {
-        if (seatDetails.seat_status === 'booked')
-            return void res.status(400).send({ seatDetails, status: 'failure', message: 'the seat has been already booked. please choose another seat' })
+    const userId = req.userId;
+    const user = await User.findOne({ "_id": userId }).catch(err => next(err)) // passing errors to express to handle
 
-        seatDetails.seat_status = 'booked'
-        await seatDetails.save()
+    if (user) {
+        let seatNum = req.body.seatNum;
+        seatNum = +seatNum; // converting to number
 
-        return void res.status(200).send({ seatDetails, status: 'success', message: 'seat booked successfully' })
+
+        if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+
+        const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err)) // passing errors to express handler
+
+        if (seatDetails) {
+            if (seatDetails.seat_status === 'booked')
+                return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} already booked` })
+
+            seatDetails.seat_status = 'booked'
+            seatDetails.booked_by = userId
+            seatDetails.booking_date = Date.now()
+
+            await seatDetails.save().catch(err => next(err)) // passing errors to express handler
+
+            return void res.status(HttpStatusCode.Created).send({ seatDetails, status: 'success', message: 'seat booked successfully' })
+        }
+        return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not found` })
     }
-    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'no seat found with the given detils' })
-
+    return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: 'user not found' })
 }
 
+const cancelSeat = async (req, res) => {
+    const userId = req.userId;
+    const user = await User.findOne({ "_id": userId }).catch(err => next(err)) // passing errors to express to handle
+
+    if (user) {
+        const userId = req.userId;
+
+        let seatNum = req.body.seatNum;
+        seatNum = +seatNum; // converting to number
+
+
+        if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+
+        const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err)) // passing errors to express handler
+
+        if (seatDetails) {
+            if (seatDetails.seat_status === 'unbooked')
+                return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} not booked` })
+
+            const seatBookedBy = seatDetails.booked_by;
+            if (seatBookedBy === userId) {
+
+                seatDetails.seat_status = 'unbooked'
+                delete seatDetails.booked_by
+                delete seatDetails.booking_date
+
+                await seatDetails.save().catch(err => next(err)) // passing errors to express handler
+
+                return void res.status(HttpStatusCode.Created).send({ seatDetails, status: 'success', message: 'seat cancelled successfully' })
+            }
+            return void res.status(HttpStatusCode.Unauthorized).send({ seatDetails: null, status: 'failure', message: 'this seat is not under your booking. you can only cancel a seat you have booked' })
+        }
+        else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not found` })
+    }
+    return void res.status(HttpStatusCode.Unauthorized).send({ seatDetails: null, status: 'failure', message: 'user not found' })
+}
+
+
 const getAllBookedSeats = async (req, res) => {
-    const allBookedSeats = await Ticket.find({ "seat_status": "booked" });
-    if (allBookedSeats.length > 0)
-        return void res.status(200).send({ booked_seats: allBookedSeats, status: 'success', message: 'all booked seats' })
-    return res.status(200).send({ booked_seats: allBookedSeats, status: 'success', message: 'no booked seats' })
     // show all booked seats
+    const allBookedSeats = await Ticket.find({ "seat_status": "booked" }).catch(err => next(err)) // passing errors to express to handle;
+    return void res.status(HttpStatusCode.Ok).send({ booked_seats: allBookedSeats, status: 'success', message: 'booked seats' })
 }
 
 const getAllUnbookedSeats = async (req, res) => {
-    // show all booked seats
-    const allUnbookedSeats = await Ticket.find({ "seat_status": "unbooked" });
-    if (allUnbookedSeats.length > 0)
-        return void res.status(200).send({ booked_seats: allUnbookedSeats, status: 'success', message: 'all empty seats' })
-    return res.status(200).send({ booked_seats: allUnbookedSeats, status: 'success', message: 'no empty seats' })
+    // show all unbooked seats
+    const allUnbookedSeats = await Ticket.find({ "seat_status": "unbooked" }).catch(err => next(err)) // passing errors to express to handle;
+    return void res.status(HttpStatusCode.Ok).send({ booked_seats: allUnbookedSeats, status: 'success', message: 'empty seats' })
+
 }
 
 const getAllSeats = async (req, res) => {
-    // show all booked seats
-    const allSeats = await Ticket.find({});
-    if (allSeats.length > 0)
-        return void res.status(200).send({ seats: allSeats, status: 'success', message: 'all seats' })
-    return res.status(200).send({ seats: allSeats, status: 'success', message: 'no seats' })
+    // show all seats
+    const allSeats = await Ticket.find({}).catch(err => next(err)) // passing errors to express to handle;
+
+    return void res.status(HttpStatusCode.Ok).send({ seats: allSeats, status: 'success', message: 'all seats' })
+
 }
 
 const deleteSeats = async (req, res) => {
     // fetch user details to check whether user type is admin or not
-    const user = await User.findOne({ "_id": req.userId })
-    console.log(user)
-    if (user.user_type === 'admin') {
-        const allSeats = await Ticket.find({});
-        if (allSeats.length > 0) {
+    const user = await User.findOne({ "_id": req.userId }).catch(err => next(err)) // passing errors to express to handle
+    if (user) {
+        if (user.user_type === 'admin') {
+            const allSeats = await Ticket.find({}).catch(err => next(err)) // passing errors to express to handle;
+
             const promisesArray = []
             allSeats.forEach(seat => {
                 seat['seat_status'] = "unbooked";
-                delete seat.booked_by;
+                delete seat.booked_by; // deleting booking details
                 delete seat.booking_date;
                 promisesArray.push(
-                    Ticket.findOneAndUpdate({ "_id": seat._id }, seat, { upsert: false })
+                    seat.save()
                 )
             })
+
             Promise.allSettled(promisesArray).then(() => {
                 return void res.status(200).send({ status: 'success', message: 'all seats released' })
             })
-        }
 
-        else return res.status(200).send({ seats: allSeats, status: 'success', message: 'no seats' })
+        }
+        else {
+            res.status(401).send({ auth: false, message: 'user is not authorized for this task' })
+        }
     }
-    else {
-        res.status(401).send({ auth: false, message: 'user is not authorized for this task' })
-    }
+    return void res.status(HttpStatusCode.Unauthorized).send({ seatDetails: null, status: 'failure', message: 'user not found' })
 
 }
 
-module.exports = { getSeatDetails, bookSeat, getAllBookedSeats, getAllSeats, getAllUnbookedSeats, deleteSeats }
+module.exports = { getSeatDetails, bookSeat, getAllBookedSeats, getAllSeats, getAllUnbookedSeats, deleteSeats, cancelSeat, getPersonDetails }

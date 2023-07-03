@@ -10,8 +10,6 @@ COPY package*.json ./
 
 RUN npm install
 
-# If you are building your code for production
-# RUN npm ci --omit=dev
 
 # Bundle app source
 COPY . .
@@ -23,6 +21,7 @@ ENV JWT_SECRET=samplesecret
 ENV MONGO_URL=mongodb:27017
 ENV MONGO_DATABASE_NAME=busTicketing
 ENV SERVER_PORT=3000
+ENV JWT_EXPIRY_MINUTES=3600
 
 
 CMD [ "node", "index.js" ]
