@@ -31,7 +31,7 @@ const getPersonDetails = async (req, res) => {
 
     if (seatDetails)
         if (seatDetails.seat_status === 'booked') {
-            const user = await User.findOne({ "_id": seatDetails.booked_by }, { "password": 1, "user_type": 1 }).catch(err => next(err))
+            const user = await User.findOne({ "_id": seatDetails.booked_by }, { "name": 1, "email": 1 }).catch(err => next(err))
             console.log(user)
             return void res.status(HttpStatusCode.Ok).send({ user, status: 'success', message: 'user details' })
         }
