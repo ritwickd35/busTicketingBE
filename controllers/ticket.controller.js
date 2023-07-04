@@ -10,22 +10,22 @@ const getSeatDetails = async (req, res) => {
     let seatNum = req.params.seatNum;
     seatNum = +seatNum; // converting to number
 
-    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(HttpStatusCode.BadRequest).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
 
     const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err))  // passing errors to express handler 
 
     if (seatDetails) {
-        return void res.status(200).send({ seatDetails, status: 'success', message: 'found seat' })
+        return void res.status(HttpStatusCode.Ok).send({ seatDetails, status: 'success', message: 'found seat' })
     }
 
-    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
+    return void res.status(HttpStatusCode.BadRequest).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
 }
 
 const getPersonDetails = async (req, res) => {
     let seatNum = req.params.seatNum;
     seatNum = +seatNum; // converting to number
 
-    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
+    if (isNaN(seatNum) || seatNum < 1 || seatNum > 40) return void res.status(HttpStatusCode.BadRequest).send({ seatDetails: null, status: 'failure', message: 'invalid seat number' })
 
     const seatDetails = await Ticket.findOne({ "seat_number": seatNum }).catch(err => next(err))  // passing errors to express handler 
 
@@ -37,7 +37,7 @@ const getPersonDetails = async (req, res) => {
         }
         else return void res.status(HttpStatusCode.NotFound).send({ seatDetails: null, status: 'failure', message: `seat number ${seatNum} not booked` })
 
-    return void res.status(400).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
+    return void res.status(HttpStatusCode.BadRequest).send({ seatDetails: null, status: 'failure', message: 'seat not found' })
 }
 
 
@@ -57,7 +57,7 @@ const bookSeat = async (req, res) => {
 
         if (seatDetails) {
             if (seatDetails.seat_status === 'booked')
-                return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} already booked` })
+                return void res.status(HttpStatusCode.BadRequest).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} already booked` })
 
             seatDetails.seat_status = 'booked'
             seatDetails.booked_by = userId
@@ -77,8 +77,6 @@ const cancelSeat = async (req, res) => {
     const user = await User.findOne({ "_id": userId }).catch(err => next(err)) // passing errors to express to handle
 
     if (user) {
-        const userId = req.userId;
-
         let seatNum = req.body.seatNum;
         seatNum = +seatNum; // converting to number
 
@@ -88,7 +86,7 @@ const cancelSeat = async (req, res) => {
 
         if (seatDetails) {
             if (seatDetails.seat_status === 'unbooked')
-                return void res.status(400).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} not booked` })
+                return void res.status(HttpStatusCode.BadRequest).send({ seatDetails, status: 'failure', message: `seat number ${seatNum} not booked` })
 
             const seatBookedBy = seatDetails.booked_by;
             
